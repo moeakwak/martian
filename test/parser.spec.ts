@@ -4,6 +4,7 @@ import * as notion from '../src/notion';
 import {parseBlocks, parseRichText} from '../src/parser/internal';
 
 describe('gfm parser', () => {
+  const options = {allowUnsupportedObjectType: false, strictImageUrls: true};
   it('should parse paragraph with nested annotations', () => {
     const ast = md.root(
       md.paragraph(
@@ -14,7 +15,7 @@ describe('gfm parser', () => {
       )
     );
 
-    const actual = parseBlocks(ast);
+    const actual = parseBlocks(ast, options);
 
     const expected = [
       notion.paragraph([
@@ -48,7 +49,7 @@ describe('gfm parser', () => {
       )
     );
 
-    const actual = parseBlocks(ast);
+    const actual = parseBlocks(ast, options);
 
     const expected = [
       notion.paragraph([
@@ -74,7 +75,7 @@ describe('gfm parser', () => {
       md.paragraph(md.text('world'))
     );
 
-    const actual = parseBlocks(ast);
+    const actual = parseBlocks(ast, options);
 
     const expected = [
       notion.paragraph([notion.richText('hello')]),
@@ -92,7 +93,7 @@ describe('gfm parser', () => {
       md.heading(4, md.text('heading4'))
     );
 
-    const actual = parseBlocks(ast);
+    const actual = parseBlocks(ast, options);
 
     const expected = [
       notion.headingOne([notion.richText('heading1')]),
@@ -104,17 +105,48 @@ describe('gfm parser', () => {
     expect(actual).toStrictEqual(expected);
   });
 
-  it('should parse code block', () => {
+  it('should parse code block and set the language to plain text if none is provided', () => {
     const ast = md.root(
       md.paragraph(md.text('hello')),
-      md.code('public class Foo {}', 'java')
+      md.code('const foo = () => {}', undefined)
     );
 
     const actual = parseBlocks(ast);
 
     const expected = [
       notion.paragraph([notion.richText('hello')]),
+      notion.code([notion.richText('const foo = () => {}')], 'plain text'),
+    ];
+    expect(actual).toStrictEqual(expected);
+  });
+
+  it('should parse code block and set the proper language', () => {
+    const ast = md.root(
+      md.paragraph(md.text('hello')),
+      md.code('public class Foo {}', 'java')
+    );
+
+    const actual = parseBlocks(ast, options);
+
+    const expected = [
+      notion.paragraph([notion.richText('hello')]),
       notion.code([notion.richText('public class Foo {}')], 'java'),
+    ];
+
+    expect(actual).toStrictEqual(expected);
+  });
+
+  it('should parse code block and set the language to plain text if it is not supported by Notion', () => {
+    const ast = md.root(
+      md.paragraph(md.text('hello')),
+      md.code('const foo = () => {}', 'not-supported')
+    );
+
+    const actual = parseBlocks(ast);
+
+    const expected = [
+      notion.paragraph([notion.richText('hello')]),
+      notion.code([notion.richText('const foo = () => {}')], 'plain text'),
     ];
 
     expect(actual).toStrictEqual(expected);
@@ -127,7 +159,7 @@ describe('gfm parser', () => {
       )
     );
 
-    const actual = parseBlocks(ast);
+    const actual = parseBlocks(ast, options);
 
     const expected = [
       notion.blockquote([
@@ -152,7 +184,7 @@ describe('gfm parser', () => {
       md.orderedList(md.listItem(md.paragraph(md.text('d'))))
     );
 
-    const actual = parseBlocks(ast);
+    const actual = parseBlocks(ast, options);
 
     const expected = [
       notion.paragraph([notion.richText('hello')]),
@@ -189,7 +221,7 @@ describe('gfm parser', () => {
       )
     );
 
-    const actual = parseBlocks(ast);
+    const actual = parseBlocks(ast, options);
 
     const expected = [
       notion.paragraph([

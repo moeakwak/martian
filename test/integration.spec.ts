@@ -23,13 +23,13 @@ hello _world_
         notion.toDo(true, [notion.richText('todo')]),
       ];
 
-      expect(expected).toStrictEqual(actual);
+      expect(actual).toStrictEqual(expected);
     });
 
-    it('should deal with code', () => {
+    it('should deal with code - use plain text by default', () => {
       const text = `
 ## Code
-\`\`\` javascript
+\`\`\`
 const hello = "hello";
 \`\`\`
 \`\`\` python
@@ -40,11 +40,44 @@ print("hello")
 
       const expected = [
         notion.headingTwo([notion.richText('Code')]),
-        notion.code([notion.richText('const hello = "hello";')]),
-        notion.code([notion.richText('print("hello")')], 'python'),
+        notion.code([notion.richText('const hello = "hello";')], 'plain text'),
       ];
 
-      expect(expected).toStrictEqual(actual);
+      expect(actual).toStrictEqual(expected);
+    });
+
+    it('should deal with code - handle Notion highlight keys', () => {
+      const text = `
+## Code
+\`\`\` webassembly
+const hello = "hello";
+\`\`\`
+`;
+      const actual = markdownToBlocks(text);
+
+      const expected = [
+        notion.headingTwo([notion.richText('Code')]),
+        notion.code([notion.richText('const hello = "hello";')], 'webassembly'),
+      ];
+
+      expect(actual).toStrictEqual(expected);
+    });
+
+    it('should deal with code - handle Linguist highlight keys', () => {
+      const text = `
+## Code
+\`\`\` ts
+const hello = "hello";
+\`\`\`
+`;
+      const actual = markdownToBlocks(text);
+
+      const expected = [
+        notion.headingTwo([notion.richText('Code')]),
+        notion.code([notion.richText('const hello = "hello";')], 'typescript'),
+      ];
+
+      expect(actual).toStrictEqual(expected);
     });
 
     it('should deal with complex items', () => {
@@ -60,15 +93,17 @@ print("hello")
         notion.table_of_contents(),
       ];
 
-      expect(expected).toStrictEqual(actual);
+      expect(actual).toStrictEqual(expected);
     });
 
     it('should break up large elements', () => {
       const text = fs.readFileSync('test/fixtures/large-item.md').toString();
       const actual = markdownToBlocks(text);
 
-      const paragraph = actual[1].paragraph as unknown as notion.BlockText;
-      const textArray = paragraph.rich_text as unknown as Array<object>;
+      const textArray =
+        actual[1].type === 'paragraph'
+          ? actual[1].paragraph.rich_text
+          : {length: -1};
 
       expect(textArray.length).toStrictEqual(9);
     });
@@ -81,12 +116,13 @@ print("hello")
         notion.headingOne([notion.richText('List')]),
         notion.bulletedListItem(
           [notion.richText('Item 1')],
+          // @ts-expect-error This problem is being addressed in issue #15 (https://github.com/instantish/martian/issues/15)
           [notion.bulletedListItem([notion.richText('Sub Item 1')])]
         ),
         notion.bulletedListItem([notion.richText('Item 2')]),
       ];
 
-      expect(expected).toStrictEqual(actual);
+      expect(actual).toStrictEqual(expected);
     });
 
     it('should skip tables if unsupported = false', () => {
@@ -95,7 +131,7 @@ print("hello")
         allowUnsupported: false,
       });
       const expected = [notion.headingOne([notion.richText('Table')])];
-      expect(expected).toStrictEqual(actual);
+      expect(actual).toStrictEqual(expected);
     });
 
     it('should include tables if unsupported = true', () => {
@@ -103,23 +139,62 @@ print("hello")
       const actual = markdownToBlocks(text, {allowUnsupported: true});
       const expected = [
         notion.headingOne([notion.richText('Table')]),
-        notion.table([
-          notion.tableRow([
-            notion.tableCell([notion.richText('First Header')]),
-            notion.tableCell([notion.richText('Second Header')]),
-          ]),
-          notion.tableRow([
-            notion.tableCell([notion.richText('Content Cell')]),
-            notion.tableCell([notion.richText('Content Cell')]),
-          ]),
-          notion.tableRow([
-            notion.tableCell([notion.richText('Content Cell')]),
-            notion.tableCell([notion.richText('Content Cell')]),
-          ]),
-        ]),
+        notion.table(
+          [
+            notion.tableRow([
+              [notion.richText('First Header')],
+              [notion.richText('Second Header')],
+            ]),
+            notion.tableRow([
+              [notion.richText('Content Cell')],
+              [notion.richText('Content Cell')],
+            ]),
+            notion.tableRow([
+              [notion.richText('Content Cell')],
+              [notion.richText('Content Cell')],
+            ]),
+          ],
+          2
+        ),
       ];
 
       expect(expected).toStrictEqual(actual);
+    });
+
+    it('should convert markdown to blocks - deal with images - strict mode', () => {
+      const text = fs.readFileSync('test/fixtures/images.md').toString();
+      const actual = markdownToBlocks(text, {strictImageUrls: true});
+
+      const expected = [
+        notion.headingOne([notion.richText('Images')]),
+        notion.paragraph([
+          notion.richText('This is an image in a paragraph '),
+          notion.richText(', which isnt supported in Notion.'),
+        ]),
+        notion.image('https://image.com/url.jpg'),
+        notion.image('https://image.com/paragraph.jpg'),
+        notion.paragraph([notion.richText('https://image.com/blah')]),
+      ];
+
+      expect(expected).toStrictEqual(actual);
+    });
+
+    it('should convert markdown to blocks - deal with images - not strict mode', () => {
+      const text = fs.readFileSync('test/fixtures/images.md').toString();
+      const actual = markdownToBlocks(text, {strictImageUrls: false});
+
+      const expected = [
+        notion.headingOne([notion.richText('Images')]),
+        notion.paragraph([
+          notion.richText('This is an image in a paragraph '),
+          notion.richText(', which isnt supported in Notion.'),
+        ]),
+        notion.image('https://image.com/url.jpg'),
+        notion.image('https://image.com/paragraph.jpg'),
+        notion.image('https://image.com/blah'),
+      ];
+
+      expect(actual).toStrictEqual(expected);
     });
   });
 
@@ -136,7 +211,7 @@ print("hello")
         }),
       ];
 
-      expect(expected).toStrictEqual(actual);
+      expect(actual).toStrictEqual(expected);
     });
 
     it('should convert markdown with multiple newlines to rich text', () => {
@@ -150,7 +225,7 @@ print("hello")
         }),
       ];
 
-      expect(expected).toStrictEqual(actual);
+      expect(actual).toStrictEqual(expected);
     });
 
     it('should truncate items when options.notionLimits.truncate = true', () => {

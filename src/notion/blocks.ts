@@ -1,34 +1,16 @@
-/*
- * Notion SDK no longer exports types, so these are generic
- */
-export interface Block {
-  object?: string;
-  type?: string;
-  paragraph?: BlockText;
-  heading_1?: BlockText;
-  heading_2?: BlockText;
-  heading_3?: BlockText;
-  image?: object;
-  quote?: object;
-  bulleted_list_item?: object;
-  numbered_list_item?: object;
-}
+import {supportedCodeLang} from './common';
+import {AppendBlockChildrenParameters} from '@notionhq/client/build/src/api-endpoints';
 
-export interface BlockText {
-  rich_text: RichText[];
-}
-
-export interface RichText {
-  type: string;
-  annotations: object;
-  text: {
-    content: string;
-    link?: {
-      type: 'url';
-      url: string;
-    };
-  };
-}
+export type Block = AppendBlockChildrenParameters['children'][number];
+export type BlockWithoutChildren = Exclude<
+  (Block & {
+    type: 'paragraph';
+  })['paragraph']['children'],
+  undefined
+>[number];
+export type RichText = (Block & {
+  type: 'paragraph';
+})['paragraph']['rich_text'][number];
 
 export function paragraph(text: RichText[]): Block {
   return {
@@ -37,18 +19,21 @@ export function paragraph(text: RichText[]): Block {
     paragraph: {
       rich_text: text,
     },
-  } as Block;
+  };
 }
 
-export function code(text: RichText[], lang?: String): Block {
+export function code(
+  text: RichText[],
+  lang: supportedCodeLang = 'plain text'
+): Block {
   return {
     object: 'block',
     type: 'code',
     code: {
       rich_text: text,
-      language: lang || 'javascript',
+      language: lang,
     },
-  } as Block;
+  };
 }
 
 export function blockquote(text: RichText[]): Block {
@@ -58,7 +43,7 @@ export function blockquote(text: RichText[]): Block {
     quote: {
       rich_text: text,
     },
-  } as Block;
+  };
 }
 
 export function image(url: string): Block {
@@ -71,7 +56,7 @@ export function image(url: string): Block {
         url: url,
       },
     },
-  } as Block;
+  };
 }
 
 export function table_of_contents(): Block {
@@ -79,7 +64,7 @@ export function table_of_contents(): Block {
     object: 'block',
     type: 'table_of_contents',
     table_of_contents: {},
-  } as Block;
+  };
 }
 
 export function headingOne(text: RichText[]): Block {
@@ -89,7 +74,7 @@ export function headingOne(text: RichText[]): Block {
     heading_1: {
       rich_text: text,
     },
-  } as Block;
+  };
 }
 
 export function headingTwo(text: RichText[]): Block {
@@ -99,7 +84,7 @@ export function headingTwo(text: RichText[]): Block {
     heading_2: {
       rich_text: text,
     },
-  } as Block;
+  };
 }
 
 export function headingThree(text: RichText[]): Block {
@@ -109,12 +94,12 @@ export function headingThree(text: RichText[]): Block {
     heading_3: {
       rich_text: text,
     },
-  } as Block;
+  };
 }
 
 export function bulletedListItem(
   text: RichText[],
-  children: Block[] = []
+  children: BlockWithoutChildren[] = []
 ): Block {
   return {
     object: 'block',
@@ -123,12 +108,12 @@ export function bulletedListItem(
       rich_text: text,
       children: children.length ? children : undefined,
     },
-  } as Block;
+  };
 }
 
 export function numberedListItem(
   text: RichText[],
-  children: Block[] = []
+  children: BlockWithoutChildren[] = []
 ): Block {
   return {
     object: 'block',
@@ -137,13 +122,13 @@ export function numberedListItem(
       rich_text: text,
       children: children.length ? children : undefined,
     },
-  } as Block;
+  };
 }
 
 export function toDo(
   checked: boolean,
   text: RichText[],
-  children: Block[] = []
+  children: BlockWithoutChildren[] = []
 ): Block {
   return {
     object: 'block',
@@ -153,35 +138,30 @@ export function toDo(
       checked: checked,
       children: children.length ? children : undefined,
     },
-  } as Block;
+  };
 }
 
-export function table(children: Block[] = []): Block {
+export function table(
+  children: BlockWithoutChildren[],
+  tableWidth: number
+): Block {
   return {
-    object: 'unsupported',
+    object: 'block',
     type: 'table',
     table: {
-      children: children.length ? children : undefined,
+      table_width: tableWidth,
+      has_row_header: true,
+      children: children?.length ? children : [],
     },
-  } as Block;
+  };
 }
 
-export function tableRow(children: Block[] = []): Block {
+export function tableRow(cells: RichText[][] = []): BlockWithoutChildren {
   return {
-    object: 'unsupported',
+    object: 'block',
     type: 'table_row',
     table_row: {
-      children: children.length ? children : undefined,
+      cells: cells.length ? cells : [],
     },
-  } as Block;
-}
-
-export function tableCell(children: Block[] = []): Block {
-  return {
-    object: 'unsupported',
-    type: 'table_cell',
-    table_cell: {
-      children: children.length ? children : undefined,
-    },
-  } as Block;
+  };
 }
