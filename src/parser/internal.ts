@@ -6,7 +6,7 @@ import {isSupportedCodeLang, LIMITS} from '../notion';
 
 function ensureLength(text: string, copy?: object) {
   const chunks = text.match(/[^]{1,2000}/g) || [];
-  return chunks.flatMap((item: string) => notion.richText(item, copy));
+  return chunks.flatMap((item: string) => notion.richTextWithoutAnnotations(item, copy));
 }
 
 function ensureCodeBlockLanguage(lang?: string) {

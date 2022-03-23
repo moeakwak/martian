@@ -28,7 +28,7 @@ export interface RichTextOptions {
 
 export function richText(
   content: string,
-  options: RichTextOptions = {}
+  options: RichTextOptions = {},
 ): RichText {
   const annotations = options.annotations ?? {};
   return {
@@ -42,6 +42,24 @@ export function richText(
       color: 'default',
       ...annotations,
     },
+    text: {
+      content: content,
+      link: options.url
+        ? {
+            type: 'url',
+            url: options.url,
+          }
+        : undefined,
+    },
+  } as RichText;
+}
+
+export function richTextWithoutAnnotations(
+  content: string,
+  options: RichTextOptions = {},
+): RichText {
+  return {
+    type: 'text',
     text: {
       content: content,
       link: options.url

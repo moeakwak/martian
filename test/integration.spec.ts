@@ -32,9 +32,6 @@ hello _world_
 \`\`\`
 const hello = "hello";
 \`\`\`
-\`\`\` python
-print("hello")
-\`\`\`
 `;
       const actual = markdownToBlocks(text);
 
