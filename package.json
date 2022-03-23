@@ -9,7 +9,7 @@
     "test": "jest",
     "lint": "gts lint",
     "clean": "gts clean",
-    "compile": "",  // tsc
+    "compile": "",
     "fix": "gts fix",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
