@@ -1,6 +1,6 @@
 {
-  "name": "@tryfabric/martian",
-  "version": "1.1.1",
+  "name": "@instantish/martian",
+  "version": "1.2.0",
   "description": "Converts Markdown to Notion Blocks and RichText",
   "repository": "https://github.com/instantish/martian",
   "main": "build/src/index.js",
@@ -29,6 +29,7 @@
   "dependencies": {
     "@notionhq/client": "^1.0.4",
     "remark-gfm": "^1.0.0",
+    "remark-math": "^4.0.0",
     "remark-parse": "^9.0.0",
     "unified": "^9.2.1"
   },
